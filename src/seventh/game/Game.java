@@ -175,7 +175,7 @@ public class Game implements GameInfo, Debugable, Updatable {
             
     private long time;
     
-    private Random random;
+    private static final Random random = new Random();
     
     private SoundEventPool soundEvents
                          , lastFramesSoundEvents;        
@@ -257,8 +257,6 @@ public class Game implements GameInfo, Debugable, Updatable {
         
         this.aiSystem = new DefaultAISystem();
         
-        this.random = new Random();
-        
         this.players = players;                
         
         this.gameState = new NetGameState();
@@ -280,11 +278,13 @@ public class Game implements GameInfo, Debugable, Updatable {
             @Override
             @EventMethod
             public void onPlayerKilled(PlayerKilledEvent event) {
-                if (gameType.isInProgress()) {
+                if (gameType.isInProgress() == false) {
+                    return;
+                }
+                
                     Player killed = event.getPlayer();
                     aiSystem.playerKilled(killed);
                     statSystem.onPlayerKilled(event);
-                }
             }
         });
             
@@ -579,21 +579,24 @@ public class Game implements GameInfo, Debugable, Updatable {
             public boolean checkCondition(Game game) {
                 for(int i = 0; i < entities.length; i++) {
                     Entity ent = entities[i];
-                    if(ent!=null) {
-                        Type entType = ent.getType();
-                        
-                        if(entType.equals(Type.BULLET) || 
-                           entType.equals(Type.EXPLOSION) || 
-                           entType.equals(Type.ROCKET)) {
-                            
-                            if(bounds.intersects(ent.getBounds())) {
-                                trigger = ent;
-                                return true;
-                            }
+                    
+                    if(ent == null) {
+                        continue;
+                    }
+                    
+                    Type entType = ent.getType();
+
+                    if(entType.equals(Type.BULLET) || 
+                       entType.equals(Type.EXPLOSION) || 
+                       entType.equals(Type.ROCKET)) {
+
+                        if(bounds.intersects(ent.getBounds())) {
+                            trigger = ent;
+                            return true;
                         }
-                        
                     }
                 }
+                
                 return false;
             }
             
@@ -1391,11 +1394,14 @@ public class Game implements GameInfo, Debugable, Updatable {
      * @return true if successfully changed the commander status of the player
      */
     public boolean playerCommander(Player player, boolean isCommander) {
-        if(player!=null) {
-            if(isCommander) {
+        if(player == null) {
+            return false;
+        }
+        
+            if(isCommander == true) {
                 Team team = player.getTeam();
-                if(team.isValid() && !team.hasCommander()) {
-                    if(player.isAlive()) {
+                if(team.isValid()==true && team.hasCommander()==false) {
+                    if(player.isAlive() == true) {
                         Entity ent = player.getEntity();
                         ent.softKill();
                             
@@ -1405,12 +1411,11 @@ public class Game implements GameInfo, Debugable, Updatable {
                     player.setCommander(isCommander);
                     return true;
                 }
-            }
-            else {
+            } else {
                 player.setCommander(isCommander);
                 return true;
             }
-        }
+
         return false;
     }
     
@@ -1813,7 +1818,6 @@ public class Game implements GameInfo, Debugable, Updatable {
     }
     
     public void newBigFire(Vector2f position, Entity owner, int damage) {                
-        Random random = getRandom();
         final int maxSpread = 360;
         
         for(int i = 0; i < 8; i++) {            
